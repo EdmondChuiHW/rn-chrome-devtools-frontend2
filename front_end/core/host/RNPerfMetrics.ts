@@ -19,8 +19,14 @@ function getPerfTimestamp(): DOMHighResTimeStamp {
 }
 
 type UnsunscribeFn = () => void;
+type BreakpointForPerf = {
+  url(): string,
+  lineNumber(): number,
+  columnNumber(): number|undefined,
+};
 class RNPerfMetrics {
   #listeners: Set<RNReliabilityEventListener> = new Set();
+  #setBreakpointRequestIDCount = 0;
 
   addEventListener(listener: RNReliabilityEventListener): UnsunscribeFn {
     this.#listeners.add(listener);
@@ -56,19 +62,40 @@ class RNPerfMetrics {
     }
   }
 
-  setBreakpointRequest(params: SetBreakpointRequestEvent['params']): void {
+  setBreakpointRequest(params: Omit<SetBreakpointRequestEvent['params'], 'requestID'>): string {
+    this.#setBreakpointRequestIDCount += 1;
+    const requestID = `breakpoint-reqest-${this.#setBreakpointRequestIDCount}`;
+
     this.sendEvent({
       eventName: 'Debugger.SetBreakpoint.Request',
       timestamp: getPerfTimestamp(),
-      params,
+      params: {
+        requestID,
+        ...params,
+      },
     });
+
+    return requestID;
   }
 
-  setBreakpointResponse(params: SetBreakpointResponseEvent['params']): void {
+  setBreakpointResponse(requestID: string, breakpoint: BreakpointForPerf|undefined): void {
+    if (!breakpoint) {
+      // TODO
+      return;
+    }
+
     this.sendEvent({
       eventName: 'Debugger.SetBreakpoint.Response',
       timestamp: getPerfTimestamp(),
-      params,
+      params: {
+        requestID,
+        actualLocation: {
+          lineNumber: breakpoint.lineNumber(),
+          columnNumber: breakpoint.columnNumber(),
+          scriptId: breakpoint.url(),
+        },
+        breakpointID: 'placeholder',
+      },
     });
   }
 
@@ -106,7 +133,7 @@ export type SetBreakpointEventType =|'logpoint'|'unconditionalBreakpoint'|'condi
 export type BreakpointLocation = Readonly<{
   scriptId: string,
   lineNumber: number,
-  columnNumber: number,
+  columnNumber: number | null | undefined,
 }>;
 
 export type SetBreakpointRequestEvent = Readonly<{
@@ -143,7 +170,7 @@ export type DebuggerPausedEvent = Readonly<{
   eventName: 'Debugger.Paused',
   timestamp: DOMHighResTimeStamp,
   params: Readonly<{
-    hitBreakpointIDs: Readonly<string[]>| null | void,
+    hitBreakpointIDs: Readonly<string[]>| null | undefined,
     location: BreakpointLocation,
   }>,
 }>;

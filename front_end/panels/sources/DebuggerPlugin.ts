@@ -468,8 +468,24 @@ export class DebuggerPlugin extends Plugin {
       if (this.editor && SourceFrame.SourceFrame.isBreakableLine(this.editor.state, line)) {
         contextMenu.debugSection().appendItem(
             i18nString(UIStrings.addBreakpoint),
-            this.createNewBreakpoint.bind(
-                this, line, EMPTY_BREAKPOINT_CONDITION, /* enabled */ true, /* isLogpoint */ false));
+            async () => {
+              const url = this.uiSourceCode.url();
+              const requestID = Host.rnPerfMetrics.setBreakpointRequest({
+                requestedLocation: {
+                  columnNumber: null,
+                  lineNumber: line.number,
+                  scriptId: url,
+                },
+                entryPoint: 'fileGutterClicked',
+                type: 'unconditionalBreakpoint',
+              });
+
+              const breakpoint = await this.createNewBreakpoint(
+                  line, EMPTY_BREAKPOINT_CONDITION, /* enabled */ true, /* isLogpoint */ false);
+
+              Host.rnPerfMetrics.setBreakpointResponse(requestID, breakpoint);
+            },
+        );
         if (supportsConditionalBreakpoints) {
           contextMenu.debugSection().appendItem(i18nString(UIStrings.addConditionalBreakpoint), () => {
             Host.userMetrics.breakpointEditDialogRevealedFrom(
@@ -1521,14 +1537,14 @@ export class DebuggerPlugin extends Plugin {
 
   private async createNewBreakpoint(
       line: CodeMirror.Line, condition: Breakpoints.BreakpointManager.UserCondition, enabled: boolean,
-      isLogpoint: boolean): Promise<void> {
+      isLogpoint: boolean): Promise<Breakpoints.BreakpointManager.Breakpoint|undefined> {
     if (!this.editor || !SourceFrame.SourceFrame.isBreakableLine(this.editor.state, line)) {
       return;
     }
     Host.userMetrics.actionTaken(Host.UserMetrics.Action.ScriptsBreakpointSet);
     this.#recordSourcesPanelDebuggedMetrics();
     const origin = this.transformer.editorLocationToUILocation(line.number - 1);
-    await this.setBreakpoint(origin.lineNumber, origin.columnNumber, condition, enabled, isLogpoint);
+    return await this.setBreakpoint(origin.lineNumber, origin.columnNumber, condition, enabled, isLogpoint);
   }
 
   private async setBreakpoint(
