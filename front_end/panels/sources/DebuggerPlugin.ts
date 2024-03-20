@@ -473,7 +473,7 @@ export class DebuggerPlugin extends Plugin {
               const requestID = Host.rnPerfMetrics.setBreakpointRequest({
                 requestedLocation: {
                   columnNumber: null,
-                  lineNumber: line.number,
+                  lineNumber: editorLineNumber,
                   scriptId: url,
                 },
                 entryPoint: 'fileGutterClicked',

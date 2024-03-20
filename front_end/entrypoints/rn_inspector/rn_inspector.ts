@@ -20,6 +20,9 @@ import * as SDK from '../../core/sdk/sdk.js';
 import * as Main from '../main/main.js';
 import type * as InspectorBackend from '../../core/protocol_client/InspectorBackend.js';
 
+globalThis.enableReactNativePerfMetrics = true;
+globalThis.enableReactNativePerfMetricsGlobalPostMessage = true;
+
 Host.RNPerfMetrics.registerPerfMetricsGlobalPostMessageHandler();
 
 // Legacy JavaScript Profiler - we support this until Hermes can support the
@@ -78,3 +81,11 @@ SDK.SDKModel.SDKModel.register(
 // @ts-ignore Exposed for legacy layout tests
 self.runtime = Root.Runtime.Runtime.instance({forceNew: true});
 new Main.MainImpl.MainImpl();
+
+Host.rnPerfMetrics.debuggerLaunched();
+
+SDK.TargetManager.TargetManager.instance().addModelListener(
+    SDK.DebuggerModel.DebuggerModel, SDK.DebuggerModel.Events.DebuggerWasEnabled,
+    () => Host.rnPerfMetrics.debuggerReady());
+
+document.addEventListener('visibilitychange', console.log);

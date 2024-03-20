@@ -62,6 +62,20 @@ class RNPerfMetrics {
     }
   }
 
+  debuggerLaunched(): void {
+    this.sendEvent({
+      eventName: 'Debugger.Launched',
+      timestamp: getPerfTimestamp(),
+    });
+  }
+
+  debuggerReady(): void {
+    this.sendEvent({
+      eventName: 'Debugger.Ready',
+      timestamp: getPerfTimestamp(),
+    });
+  }
+
   setBreakpointRequest(params: Omit<SetBreakpointRequestEvent['params'], 'requestID'>): string {
     this.#setBreakpointRequestIDCount += 1;
     const requestID = `breakpoint-reqest-${this.#setBreakpointRequestIDCount}`;
@@ -94,7 +108,6 @@ class RNPerfMetrics {
           columnNumber: breakpoint.columnNumber(),
           scriptId: breakpoint.url(),
         },
-        breakpointID: 'placeholder',
       },
     });
   }
@@ -125,6 +138,9 @@ export function registerPerfMetricsGlobalPostMessageHandler(): void {
   getInstance().addEventListener(event => {
     window.postMessage({event, tag: 'react-native-chrome-devtools-perf-metrics'}, window.location.origin);
   });
+  getInstance().addEventListener(event => {
+    console.log(event);
+  });
 }
 
 export type SetBreakpointEventEntryPoint =|'fileGutterClicked'|'savedStateRestored';
@@ -151,7 +167,6 @@ export type SetBreakpointResponseEvent = Readonly<{
   eventName: 'Debugger.SetBreakpoint.Response',
   timestamp: DOMHighResTimeStamp,
   params: Readonly<{
-    breakpointID: string,
     requestID: string,
     actualLocation: BreakpointLocation,
   }>,
@@ -175,5 +190,15 @@ export type DebuggerPausedEvent = Readonly<{
   }>,
 }>;
 
-type ReactNativeChromeDevToolsEvent =
-    |SetBreakpointRequestEvent|SetBreakpointResponseEvent|BreakpointResolvedEvent|DebuggerPausedEvent;
+export type DebuggerLaunchedEvent = Readonly<{
+  eventName: 'Debugger.Launched',
+  timestamp: DOMHighResTimeStamp,
+}>;
+
+export type DebuggerReadyEvent = Readonly<{
+  eventName: 'Debugger.Ready',
+  timestamp: DOMHighResTimeStamp,
+}>;
+
+type ReactNativeChromeDevToolsEvent =|SetBreakpointRequestEvent|SetBreakpointResponseEvent|BreakpointResolvedEvent|
+    DebuggerPausedEvent|DebuggerLaunchedEvent|DebuggerReadyEvent;
