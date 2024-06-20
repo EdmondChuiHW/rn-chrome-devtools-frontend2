@@ -10,3 +10,12 @@ experimental domain FuseboxClient
   # message to the console, etc. The client should send this before enabling
   # the Runtime and Log domains.
   command setClientMetadata
+
+  # Pings the target to check connection status.
+  # Compliant target should send a pong event back.
+  # There is no response for this command, as the pong event can be sent without first receiving a ping.
+  command ping
+
+  # Sent as a response to a ping command.
+  # This can be sent at anytime by the target without receiving a ping.
+  event pong

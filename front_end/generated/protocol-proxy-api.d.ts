@@ -234,8 +234,21 @@ declare namespace ProtocolProxyApi {
      */
     invoke_setClientMetadata(): Promise<Protocol.ProtocolResponseWithError>;
 
+    /**
+     * Pings the target to check connection status.
+     * Compliant target should send a pong event back.
+     * There is no response for this command, as the pong event can be sent without first receiving a ping.
+     */
+    invoke_ping(): Promise<Protocol.ProtocolResponseWithError>;
+
   }
   export interface FuseboxClientDispatcher {
+    /**
+     * Sent as a response to a ping command.
+     * This can be sent at anytime by the target without receiving a ping.
+     */
+    pong(): void;
+
   }
 
   export interface AccessibilityApi {

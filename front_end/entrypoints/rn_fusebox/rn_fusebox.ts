@@ -17,14 +17,14 @@ import '../../panels/timeline/timeline-meta.js';
 
 import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
+import type * as Platform from '../../core/platform/platform.js';
+import * as RNExperiments from '../../core/rn_experiments/rn_experiments.js';
 import * as Root from '../../core/root/root.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import type * as ProtocolProxyApi from '../../generated/protocol-proxy-api.js';
+import type * as Sources from '../../panels/sources/sources.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import * as Main from '../main/main.js';
-
-import type * as Platform from '../../core/platform/platform.js';
-import type * as Sources from '../../panels/sources/sources.js';
-import * as RNExperiments from '../../core/rn_experiments/rn_experiments.js';
 
 /*
  * To ensure accurate timing measurements,
@@ -168,6 +168,108 @@ if (globalThis.FB_ONLY__reactNativeFeedbackLink) {
     location: UI.Toolbar.ToolbarItemLocation.MAIN_TOOLBAR_RIGHT,
     actionId,
     showLabel: true,
+  });
+}
+
+class ConnectionStatusToolbarItemProvider extends SDK.TargetManager.Observer implements
+    UI.Toolbar.Provider, ProtocolProxyApi.FuseboxClientDispatcher {
+  #button = new UI.Toolbar.ToolbarButton('Click to reconnect', 'refresh', 'Connecting…');
+  #connectionStatusInternalID = 0;
+  #rootTarget: SDK.Target.Target|null = null;
+  #lastPingTimestampeMs: number|null = null;
+
+  constructor() {
+    super();
+    this.#button.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this.onClick.bind(this));
+
+    SDK.TargetManager.TargetManager.instance().observeTargets(this, {scoped: true});
+    this.#updateRootTarget();
+  }
+
+  override targetAdded(_target: SDK.Target.Target): void {
+    this.#updateRootTarget();
+  }
+  override targetRemoved(_target: SDK.Target.Target): void {
+    this.#updateRootTarget();
+  }
+
+  #updateRootTarget(): void {
+    this.#rootTarget?.unregisterFuseboxClientDispatcher(this);
+    this.#rootTarget = SDK.TargetManager.TargetManager.instance().rootTarget();
+    this.#rootTarget?.registerFuseboxClientDispatcher(this);
+    this.#startConnectionStatusCheck();
+  }
+
+  onClick(): void {
+    window.location.reload();
+  }
+
+  item(): UI.Toolbar.ToolbarItem {
+    return this.#button;
+  }
+
+  pong(): void {
+    console.log('FuseboxClientMetadataModel pong');
+    const elapsedMs = this.#lastPingTimestampeMs === null ? null : performance.now() - this.#lastPingTimestampeMs;
+    if (elapsedMs !== null) {
+      this.#button.setText(elapsedMs.toFixed(0) + 'ms');
+    } else {
+      this.#button.setText('Pong');
+    }
+  }
+
+  #startConnectionStatusCheck(): void {
+    this.#stopConnectionStatusCheck();
+    if (this.#rootTarget) {
+      this.#connectionStatusCheckTick();
+      this.#connectionStatusInternalID = window.setInterval(this.#connectionStatusCheckTick.bind(this), 5000);
+    }
+  }
+
+  #stopConnectionStatusCheck(): void {
+    window.clearInterval(this.#connectionStatusInternalID);
+    this.#connectionStatusInternalID = 0;
+    this.#button.setText('Ded 😵😵😵 Lost connection. Click to reconnect');
+  }
+
+  #connectionStatusCheckTick(): void {
+    const target = this.#rootTarget;
+    if (!target) {
+      console.log('FuseboxClientMetadataModel connection status check tick no root');
+      this.#stopConnectionStatusCheck();
+      return;
+    }
+    if (target.suspended()) {
+      console.log('FuseboxClientMetadataModel connection status check tick suspended');
+      return;
+    }
+    if (target.isDisposed()) {
+      console.log('FuseboxClientMetadataModel connection status check tick disposed');
+      return;
+    }
+    if (!target.router()) {
+      console.log('FuseboxClientMetadataModel connection status check tick no router');
+      return;
+    }
+    console.log('FuseboxClientMetadataModel connection status check tick');
+    this.#lastPingTimestampeMs = performance.now();
+    this.#button.setText('Ping');
+    target.fuseboxClientAgent().invoke_ping().then(result => {
+      console.log('FuseboxClientMetadataModel ping result', result, result.getError());
+    });
+  }
+}
+
+if (true) {
+  const actionId = 'connection-status-button';
+
+  const connectionStatusToolbarItemProvider = new ConnectionStatusToolbarItemProvider();
+  UI.Toolbar.registerToolbarItem({
+    location: UI.Toolbar.ToolbarItemLocation.MAIN_TOOLBAR_RIGHT,
+    showLabel: true,
+    loadItem: async () => {
+      return connectionStatusToolbarItemProvider;
+    },
   });
 }
 

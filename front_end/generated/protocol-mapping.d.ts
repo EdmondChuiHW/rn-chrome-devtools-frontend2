@@ -13,6 +13,11 @@
 export namespace ProtocolMapping {
   export interface Events {
     /**
+     * Sent as a response to a ping command.
+     * This can be sent at anytime by the target without receiving a ping.
+     */
+    'FuseboxClient.pong': [];
+    /**
      * The loadComplete event mirrors the load complete event sent by the browser to assistive
      * technology when the web page has finished loading.
      */
@@ -768,6 +773,15 @@ export namespace ProtocolMapping {
      * the Runtime and Log domains.
      */
     'FuseboxClient.setClientMetadata': {
+      paramsType: [];
+      returnType: void;
+    };
+    /**
+     * Pings the target to check connection status.
+     * Compliant target should send a pong event back.
+     * There is no response for this command, as the pong event can be sent without first receiving a ping.
+     */
+    'FuseboxClient.ping': {
       paramsType: [];
       returnType: void;
     };

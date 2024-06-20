@@ -41,7 +41,9 @@ export function registerCommands(inspectorBackend) {
 
 
 // FuseboxClient.
+inspectorBackend.registerEvent("FuseboxClient.pong", []);
 inspectorBackend.registerCommand("FuseboxClient.setClientMetadata", [], [], "Identifies the current client as being Fusebox.  The Fusebox backend may use this knowledge to print an informational message to the console, etc. The client should send this before enabling the Runtime and Log domains.");
+inspectorBackend.registerCommand("FuseboxClient.ping", [], [], "Pings the target to check connection status. Compliant target should send a pong event back. There is no response for this command, as the pong event can be sent without first receiving a ping.");
 
 // Accessibility.
 inspectorBackend.registerEnum("Accessibility.AXValueType", {Boolean: "boolean", Tristate: "tristate", BooleanOrUndefined: "booleanOrUndefined", Idref: "idref", IdrefList: "idrefList", Integer: "integer", Node: "node", NodeList: "nodeList", Number: "number", String: "string", ComputedString: "computedString", Token: "token", TokenList: "tokenList", DomRelation: "domRelation", Role: "role", InternalRole: "internalRole", ValueUndefined: "valueUndefined"});

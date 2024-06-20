@@ -844,6 +844,14 @@ export class TargetBase {
     this.registerDispatcher('DOMStorage', dispatcher);
   }
 
+  registerFuseboxClientDispatcher(dispatcher: ProtocolProxyApi.FuseboxClientDispatcher): void {
+    this.registerDispatcher('FuseboxClient', dispatcher);
+  }
+
+  unregisterFuseboxClientDispatcher(dispatcher: ProtocolProxyApi.FuseboxClientDispatcher): void {
+    this.unregisterDispatcher('FuseboxClient', dispatcher);
+  }
+
   registerFetchDispatcher(dispatcher: ProtocolProxyApi.FetchDispatcher): void {
     this.registerDispatcher('Fetch', dispatcher);
   }

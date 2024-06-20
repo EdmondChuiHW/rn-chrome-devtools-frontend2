@@ -12,6 +12,16 @@
                 {
                     "name": "setClientMetadata",
                     "description": "Identifies the current client as being Fusebox.\n\nThe Fusebox backend may use this knowledge to print an informational\nmessage to the console, etc. The client should send this before enabling\nthe Runtime and Log domains."
+                },
+                {
+                    "name": "ping",
+                    "description": "Pings the target to check connection status.\nCompliant target should send a pong event back.\nThere is no response for this command, as the pong event can be sent without first receiving a ping."
+                }
+            ],
+            "events": [
+                {
+                    "name": "pong",
+                    "description": "Sent as a response to a ping command.\nThis can be sent at anytime by the target without receiving a ping."
                 }
             ]
         },
