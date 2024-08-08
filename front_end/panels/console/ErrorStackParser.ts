@@ -48,7 +48,8 @@ export function parseSourcePositionsFromErrorStack(
       continue;
     }
 
-    let left = match[0].length;
+    const textWithSpacesLength = match[0].length;
+    let left = Math.max(textWithSpacesLength, line.lastIndexOf(' '));
     let right = line.length;
     let enclosedInBraces = false;
     while (line[right - 1] === ')') {
