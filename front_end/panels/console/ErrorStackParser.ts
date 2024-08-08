@@ -73,7 +73,7 @@ export function parseSourcePositionsFromErrorStack(
 
     const linkCandidate = line.substring(left, right);
     const splitResult = Common.ParsedURL.ParsedURL.splitLineAndColumn(linkCandidate);
-    if (splitResult.url === '<anonymous>') {
+    if (splitResult.url === '<anonymous>' || splitResult.url === 'native') {
       linkInfos.push({line});
       continue;
     }
