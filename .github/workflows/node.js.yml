@@ -1,31 +1,29 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
-
-name: Node.js CI
+name: Build DevTools frontend
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_call:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x, 22.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
+    - uses: actions/checkout@v3
       with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - run: npm ci
-    - run: npm run build --if-present
-    - run: npm unittest -- --expanded-reportin
+        path: src
+    - name: setup-depot-tools
+      uses: newkdev/setup-depot-tools@v1.0.1
+    - name: Sync gclient workspace
+      run: |
+        gclient config --unmanaged src --name src
+        gclient sync --no-history
+    - name: Build DevTools frontend (debug)
+      run: |
+        cd src
+        gn gen out/Default
+        autoninja -C out/Default
+    - uses: ./src/.github/actions/upload-artifact
+      with:
+        name: dist-front_end
+        path: src/out/Default/gen/front_end
+    - name: Run unit tests
+      run: npm unittest -- --expanded-reportin
