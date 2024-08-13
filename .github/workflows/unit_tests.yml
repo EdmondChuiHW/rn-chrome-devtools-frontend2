@@ -1,4 +1,4 @@
-name: Build DevTools frontend
+name: Run unit tests
 
 on:
   workflow_call:
